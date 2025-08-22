@@ -9,6 +9,7 @@ import logging
 # Domain imports
 from ..domain.service.assessment_service import AssessmentService
 from ..domain.controller.assessment_controller import AssessmentController
+from ..domain.model.assessment_model import KesgResponse, KesgItem
 
 logger = logging.getLogger("assessment-router")
 
@@ -33,6 +34,32 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "message": "Assessment service is running"
     }
+
+@assessment_router.get("/kesg", summary="kesg 테이블의 모든 항목 조회")
+async def get_kesg_items(
+    controller: AssessmentController = Depends(get_assessment_controller)
+) -> KesgResponse:
+    """kesg 테이블에서 모든 item_name 조회"""
+    try:
+        return controller.get_kesg_items()
+    except Exception as e:
+        logger.error(f"❌ kesg 항목 조회 API 오류: {e}")
+        raise HTTPException(status_code=500, detail=f"kesg 항목 조회 중 오류가 발생했습니다: {str(e)}")
+
+@assessment_router.get("/kesg/{item_id}", summary="특정 kesg 항목 조회")
+async def get_kesg_item_by_id(
+    item_id: int,
+    controller: AssessmentController = Depends(get_assessment_controller)
+) -> KesgItem:
+    """특정 ID의 kesg 항목 조회"""
+    try:
+        return controller.get_kesg_item_by_id(item_id)
+    except ValueError as e:
+        logger.warning(f"⚠️ kesg 항목을 찾을 수 없음: ID {item_id}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ kesg 항목 조회 API 오류: {e}")
+        raise HTTPException(status_code=500, detail=f"kesg 항목 조회 중 오류가 발생했습니다: {str(e)}")
 
 @assessment_router.get("/", summary="모든 assessment 목록 조회")
 async def get_assessments(
