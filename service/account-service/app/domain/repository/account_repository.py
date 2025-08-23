@@ -12,19 +12,30 @@ class AccountRepository:
     def __init__(self, engine):
         self.engine = engine
     
-    def create_user(self, user_id: str, hashed_password: str, company_id: str) -> bool:
+    def create_user(self, user_data: dict) -> bool:
         """사용자 생성(해시된 비밀번호)"""
         try:
             with self.engine.connect() as conn:
+                logger.info(f"Executing SQL with data: {user_data}")
+                logger.info(f"Executing SQL with cleaned data: {user_data}")
                 conn.execute(
-                    text("""INSERT INTO auth (user_id, user_pw, company_id)
-                            VALUES (:user_id, :user_pw, :company_id)"""),
-                    {"user_id": user_id, "user_pw": hashed_password, "company_id": company_id},
+                    text("""
+                    INSERT INTO auth (
+                        user_id, user_pw, industry, bs_num, company_id,
+                        company_add, company_country, manager_dept,
+                        manager_name, manager_email, manager_phone
+                    ) VALUES (
+                        :user_id, :user_pw, :industry, :bs_num, :company_id,
+                        :company_add, :company_country, :manager_dept,
+                        :manager_name, :manager_email, :manager_phone
+                    )
+                """),
+                    user_data
                 )
                 conn.commit()
             return True
         except IntegrityError:
-            logger.warning(f"User already exists: {user_id}")
+            logger.warning(f"User already exists: {user_data['user_id']}")
             return False
         except SQLAlchemyError as e:
             logger.error(f"Database error during user creation: {e}")
